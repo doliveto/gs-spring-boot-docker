@@ -1,0 +1,16 @@
+apiVersion : apps/v1beta1
+kind: Deployment
+metadata:
+  name: "akscni02"
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: "akscni02"
+    spec:
+      containers:
+        - name: "akscni02"
+          image: "domcri.azurecr.io/akscni02"
+          ports:
+          - containerPort: 80
