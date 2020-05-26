@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: domcri.azurecr.io
+        username: ${{ secrets.acr_domcri_username }}
+        password: ${{ secrets.acr_domcri_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/complete" -f  "complete/Dockerfile" -t domcri.azurecr.io/akskubenet01:${{ github.sha }}
+        docker push domcri.azurecr.io/akskubenet01:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_akskubenet01_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep akskubenet0160d2 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace akskubenet0160d2`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: akskubenet0160d2
+        container-registry-url: domcri.azurecr.io
+        container-registry-username: ${{ secrets.acr_domcri_username }}
+        container-registry-password: ${{ secrets.acr_domcri_password }}
+        secret-name: akskubenet01dockerauth
+       
+    - uses: azure/k8s-deploy@v1
+      with:
+        namespace: akskubenet0160d2
+        manifests: |
+          manifests/deployment-1.yml
+          manifests/service-1.yml
+        images: |
+          domcri.azurecr.io/akskubenet01:${{ github.sha }}
+        imagepullsecrets: |
+          akskubenet01dockerauth
