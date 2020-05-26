@@ -1,0 +1,16 @@
+apiVersion : apps/v1beta1
+kind: Deployment
+metadata:
+  name: "akskubenet01"
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: "akskubenet01"
+    spec:
+      containers:
+        - name: "akskubenet01"
+          image: "domcri.azurecr.io/akskubenet01"
+          ports:
+          - containerPort: 80
